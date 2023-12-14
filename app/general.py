@@ -104,3 +104,26 @@ def days_between(d1, d2):
    dt0 = pd.to_datetime(d1, format = '%Y-%m-%d')
    dt1 = pd.to_datetime(d2, format = '%Y-%m-%d')
    return (dt1 - dt0).days
+
+
+def export_to_csv(data,path):
+
+   """
+    Export data for rental and total revenue to CSV files.
+
+    Parameters:
+        - data (DataFrame or any): The data to be exported.
+        - path (str): The path or filename for the CSV file.
+
+    Note:
+        - If `path.lower() == 'rentals'`, data is assumed to be a DataFrame.
+        - If `path.lower() != 'rentals'`, data is assumed to be a  value.
+
+   """
+       
+   if path.lower() == 'rentals':
+      df = pd.DataFrame(data) 
+      df.to_csv(f"./output/{path}.csv", index=False)
+   else:
+      df = pd.DataFrame({"total_revenue": [data]}) 
+      df.to_csv(f"./output/{path}.csv", index=False)

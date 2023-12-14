@@ -1,6 +1,8 @@
 
 from app import app,db
 
+from app.general import export_to_csv
+
 # Create the database tables
 # try:
 #     with app.app_context():
@@ -9,4 +11,5 @@ from app import app,db
 #     print(f"An error occurred: {e}")
 
 if __name__ == '__main__':
+
     app.run(debug=True)

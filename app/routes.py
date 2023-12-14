@@ -1,9 +1,9 @@
 from flask import request, Response
+from app import app, db
 import json
-from app.general import is_date_args_valid, send_response
+from app.general import is_date_args_valid, send_response, export_to_csv
 
 from app.contollers import *
-from app import app, db
 
 BookService = BookService()
 HistoryService = HistoryService()
@@ -100,6 +100,8 @@ def get_rentals():
       #2.Find all books that have been rented on a specific period
       data = HistoryService.get_all_rented_books_for_period(start_date,end_date,'list')
 
+      export_to_csv(data,"Rentals")
+
       return send_response(data,"success",200) 
    return send_response("Please provide valid dates","error",400) 
 
@@ -119,6 +121,8 @@ def get_total_revenue():
 
    #2. Calculate total revenue for this specific range
    data = HistoryService.calculate_total_rental_fee(rentedBooks)
+
+   export_to_csv(data,"totalRevenue")
       
    if data > 0: return send_response(data,"success",200) 
    return send_response("There is not total revenue on this range","success",200)

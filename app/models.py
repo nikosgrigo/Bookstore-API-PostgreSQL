@@ -38,7 +38,6 @@ class RentedHistory(db.Model):
         }
     
 
-
 class Book(db.Model):
     __tablename__ = 'books'
 

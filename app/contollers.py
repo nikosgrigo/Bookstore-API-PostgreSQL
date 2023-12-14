@@ -43,7 +43,6 @@ class BookService:
             return [book.to_dict() for book in data] if data else None
 
 
-
     def is_available_for_rent(self,id):
 
         '''
