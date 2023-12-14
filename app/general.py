@@ -63,23 +63,24 @@ def import_data(db):
 
    '''
 
-    # Load data from CSV file
-   csv_path = './data/Books.csv'
-   data = pd.read_csv(csv_path,nrows=1000)
+
+   data = pd.read_csv('./data/Books.csv')  
+
 
     # Iterate over rows and add data to the database
    for index, row in data.iterrows():
         book = Book(
-            isbn=row['ISBN'],
-            title=row['Book-Title'],
-            author=row['Book-Author'],
-            year_of_publication=row['Year-Of-Publication'],
-            publisher=row['Publisher'],
-            avgrating=0,
-            isAvailable=True,
-            image_url_s=row['Image-URL-S'],
-            image_url_m=row['Image-URL-M'],
-            image_url_l=row['Image-URL-L']
+            isbn = row['ISBN'],
+            title = row['Book-Title'],
+            author = row['Book-Author'],
+            year_of_publication = row['Year-Of-Publication'],
+            publisher = row['Publisher'],
+            image_url_s = row['Image-URL-S'],
+            image_url_m = row['Image-URL-M'],
+            image_url_l = row['Image-URL-L'],
+            rented_now = row['User-ID'],
+            rating = row['Book-Rating'],
+            isAvailable = True
         )
         db.session.add(book)
 
@@ -127,3 +128,4 @@ def export_to_csv(data,path):
    else:
       df = pd.DataFrame({"total_revenue": [data]}) 
       df.to_csv(f"./output/{path}.csv", index=False)
+

@@ -1,5 +1,7 @@
 
-from app import db
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -48,12 +50,14 @@ class Book(db.Model):
     year_of_publication = db.Column(db.Integer)
     publisher = db.Column(db.String)
 
-    avgrating = db.Column(db.Integer)
-    isAvailable = db.Column(db.Boolean, default=True)
-
+    
     image_url_s = db.Column(db.String)
     image_url_m = db.Column(db.String)
     image_url_l = db.Column(db.String)
+
+    rented_now = db.Column(db.Integer)
+    rating = db.Column(db.Integer)
+    isAvailable = db.Column(db.Boolean, default=True)
 
 
     def to_dict(self):
@@ -64,8 +68,6 @@ class Book(db.Model):
             'author': self.author,
             'year_of_publication': self.year_of_publication,
             'publisher': self.publisher,
-            'avgrating': self.avgrating,
-            'isAvailable': self.isAvailable,
             'image_url_s': self.image_url_s,
             'image_url_m': self.image_url_m,
             'image_url_l': self.image_url_l,
