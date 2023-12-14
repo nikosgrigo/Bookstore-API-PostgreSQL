@@ -5,7 +5,7 @@ db = SQLAlchemy()
 class User(db.Model):
     __tablename__ = 'users'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
     username = db.Column(db.String, unique=True, nullable=False)
     email = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
@@ -49,15 +49,17 @@ class RentedHistory(db.Model):
     __tablename__ = 'history'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    isbn = db.Column(db.String, db.ForeignKey('books.isbn'), nullable=False)
-    # user = db.Column(db.String ,db.ForeignKey('users.username'), nullable=False)
+   
     total_cost = db.Column(db.Integer)
     start_date = db.Column(db.String)
     end_date = db.Column(db.String)
 
+    isbn = db.Column(db.String, db.ForeignKey('books.isbn'), nullable=False)
+    user = db.Column(db.Integer ,db.ForeignKey('users.id'), nullable=False)
+
     # Define the relationships
     book = db.relationship('Book', backref='rented_histories', foreign_keys=[isbn])
-    # user_info = db.relationship('User', backref='rented_histories', foreign_keys=[user])
+    user_info = db.relationship('User', backref='rented_histories', foreign_keys=[user])
 
     def to_dict(self):
         """Convert the Book instance to a dictionary."""
