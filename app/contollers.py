@@ -1,14 +1,20 @@
-from app.models import Book, User,RentedHistory
+from app.models import *
 from app.general import days_between
 import datetime
-from sqlalchemy import func
 
 
 class BookService:
-    # def __init__(self, session: Session):
-    #     self.session = session
 
     def get_all_books(self):
+
+        '''
+        Get all available books from the database.
+
+        Returns:
+        - list: A list of dictionaries containing information about each available book.
+
+        '''
+
         data = Book.query.filter_by(isAvailable=True).all()
         data = [book.to_dict() for book in data]
         return data
@@ -16,28 +22,59 @@ class BookService:
 
     def get_book_by_identifier(self, identifier:str,value):
 
+        '''
+        Get book(s) from the database based on a specified identifier and value.
+
+        Parameters:
+        - self: The instance of the class.
+        - identifier (str): The identifier to search by (e.g., 'isbn', 'title', 'author').
+        - value: The value we are looking for.
+
+        Returns:
+        - dict or list: A dictionary or a list of dictionaries containing information about the book(s).
+
+        '''
 
         if identifier.lower() == 'isbn':
             data = Book.query.get(value)
-            data = data.to_dict()
+            return data.to_dict() if data else None
         else:
             data = Book.query.filter_by(**{identifier: value}).all()
-            data = [book.to_dict() for book in data]
+            return [book.to_dict() for book in data] if data else None
 
-        return data
 
 
     def is_available_for_rent(self,id):
+
+        '''
+        Check if a book is available for rent based on its ID.
+
+        Parameters:
+        - id: The isbn of the book.
+
+        Returns:
+        - Book or bool: The book instance if it is available for rent, False otherwise.
+
+        '''
+
+        # Check if book is rented now based on availability
         book = Book.query.get(id)
         if book and book.isAvailable:
-            print(f"Book with is available.")
             return book
-        else:
-            print(f"Book with is not available or does not exist.")
-            return False
+        return False
 
 
     def rent_book(self,book,db):
+
+        '''
+        Rent a book, update availability, and record the transaction in the rented history.
+
+        Parameters:
+        - book: The book instance to be rented.
+        - db: The SQLAlchemy database instance.
+
+        '''
+
 
         book.isAvailable = False
         print('Book Availability updated successfully!')
@@ -51,16 +88,21 @@ class BookService:
         #check if book is already inserted on the list of history table
         rentedBook =  RentedHistory.query.get(book.isbn)
 
+        #--------ONLY FOR DEVELOPEMENT PURPOSES--------
+        userId = 1
+        #--------ONLY FOR DEVELOPEMENT PURPOSES--------
+
         if rentedBook:
             rentedBook.start_date = formatted_date
             print('Rented book date updated successfully!')
         else:
             # Create an instance of RentedHistory
             new_rented_book = RentedHistory(
-                isbn = book.isbn,  # Replace with a valid ISBN
                 total_cost = 0,
                 start_date = formatted_date,
-                end_date = None
+                end_date = None,
+                isbn = book.isbn,
+                user = userId
             )
 
             # Add the instance to the session
@@ -72,101 +114,100 @@ class BookService:
         db.session.commit()
         
 
-
-class UserService:
-    # def __init__(self, session: Session):
-    #     self.session = session
-
-    def get_all_users(self):
-        data = User.query().all()
-        data = [book.to_dict() for book in data]
-        return data
-
-
-    def get_user_by_id(self, id):
-        data = User.query.get(id)
-        return data.to_dict()
-
-
-    def create_user(self, json_data, db):
-
-        username, email, password, isAdmin = json_data.values()
-        isAdmin = bool(isAdmin)
-
-        if not self.check_if_user_exists(username, email):       #Check if user already exists
-
-            new_user = User(username = username,
-                             email = email,
-                             password = password,
-                             isAdmin = isAdmin
-                             )
-            db.session.add(new_user)
-            db.session.commit()
-            return True
-        return False
-
-    def check_if_user_exists(self, username, email):
-        data = User.query.filter(User.username == username, User.email == email).first()
-        
-        return True if data else False
-
-
-
 class HistoryService:
-    def get_rented_book(self,value):
 
-        #Later find rented book by user-id and isbn - NOW USE ONLY ISBN - BE CAREFUL ISBN CAN BE FOUND MORE THAT 1 TIME ON THIS TABLE
-        data = RentedHistory.query.filter_by(isbn = value).first()
+    def get_rented_book(self,rented_id):
+
+        '''
+        Get information about a rented book based on its rented ID.
+
+        Parameters:
+        - rented_id: The rented ID of the book.
+
+        Returns:
+        - The rented book information if found, None otherwise.
+
+        '''
+
+        data = RentedHistory.query.get(int(rented_id))
         if data: return data 
         return None
 
 
     def calculate_rental_fee(self,start,end):
-   
-        print(start,end)
+
+        '''
+        Calculate the rental fee based on the start and end dates of the rental period.
+
+        Parameters:
+        - start (str): The start date of the rental period in the format 'YYYY-MM-DD'.
+        - end (str): The end date of the rental period in the same format.
+
+        Returns:
+        - float: The calculated rental fee.
+
+        '''
 
         days = days_between(start,end)
-        print(days)
 
         if days <= 3:
             return days*1
-        else:
-            return 3*1 + (days-3)*0.5
+        return 3*1 + (days-3)*0.5
         
     
-    def calculate_total_rental_fee(self):
-     return RentedHistory.query.with_entities(func.sum(RentedHistory.total_revenue)).scalar()
-
-
     def return_book(self, rentedBook, db):
-        # 1.Change Availability on Book table to True
+
+        '''
+        Return a rented book, update book availability, and record the return transaction in the rented history.
+
+        Parameters:
+        - rentedBook: The rented book instance to be returned.
+        - db: The SQLAlchemy database instance.
+
+        Returns:
+        - float: The calculated rental fee for the returned book.
+
+        '''
+
+        # 1. Change Availability on Book table to True using foreign key
         book = rentedBook.book
         book.isAvailable = True
 
-        # 2.C Update end_date for current book
+        # 2. Update end_date for current book
 
         date = datetime.datetime.now()      
         end_date = date.strftime('%Y-%m-%d')
 
         rentedBook.end_date = end_date
 
-        #2.Calculate rental fee based on rented days
+        #3. Calculate rental fee based on rented days
         rental_fee = self.calculate_rental_fee(rentedBook.start_date,end_date)
 
 
-        #3. Update total revenue for current book
+        #4. Update total_cost on the instance
         rentedBook.total_cost = rental_fee
 
         db.session.commit()
 
-
-        #4. Update user with rental fee he/she has to pay for the book
         return rental_fee
     
 
     def get_all_rented_books_for_period(self, start, end, return_type):
-        rented_books = RentedHistory.query.filter(RentedHistory.start_date.isnot(None), 
-                                                  RentedHistory.end_date.isnot(None),
+
+        '''
+        Get all rented books within a specified rental period.
+
+        Parameters:
+        - start (str): The start date of the rental period in the format 'YYYY-MM-DD'.
+        - end (str): The end date of the rental period in the same format'.
+        - return_type: The type of return information to retrieve.
+
+        Returns:
+        - list: A list of rented books within the specified rental period.
+
+        '''
+
+        rented_books = RentedHistory.query.filter(RentedHistory.end_date.isnot(None),
                                                   RentedHistory.start_date >= start,
                                                   RentedHistory.end_date <= end).all()
         
@@ -181,6 +222,18 @@ class HistoryService:
     
 
     def calculate_total_rental_fee(self, rented_books):
+
+        '''
+        Calculate the total rental fee for a list of rented books.
+
+        Parameters:
+        - rented_books: A list of rented books.
+
+        Returns:
+        - float: The total rental fee for the provided rented books.
+
+        '''
+
         total = sum(book.total_cost for book in rented_books)
         return total
         

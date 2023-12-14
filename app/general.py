@@ -1,38 +1,68 @@
 
 from flask import Response
 import json
-from sqlalchemy import create_engine
-import os
-from dotenv import load_dotenv
-from sqlalchemy.orm import sessionmaker
 import pandas as pd
 from app.models import Book
 
 def send_response(response_data,status:str,status_code:int):
+
+   '''
+   Send an HTTP response with JSON content.
+
+   Parameters:
+   - response_data (dict): The data to be included in the response.
+   - status (str): The status of the response, either 'success' or another status.
+   - status_code (int): The HTTP status code to be included in the response.
+
+   Returns:
+   - Response: An HTTP response with JSON content.
+
+   '''
+
    if status == 'success' and not type(response_data) == str:
-      return Response(json.dumps({"data":response_data,"status":status,"status code":status_code}), content_type='application/json', status=status_code)
-   else:
-      return Response(json.dumps({"message":response_data,"status":status,"status code":status_code}), content_type='application/json', status=status_code)
+      return Response(json.dumps({"data":response_data,
+                                  "status":status,
+                                  "status code":status_code}),
+                                 content_type='application/json', status=status_code)
+   
+   return Response(json.dumps({"message":response_data,
+                               "status":status,
+                               "status code":status_code}),
+                                 content_type='application/json', status=status_code)
+
 
 def is_date_args_valid(argsList):
 
-   start_date = argsList.get('start') #(i.e. ?start=YYYY-MM-DD)
-   end_date = argsList.get('end')     #(i.e. &end=YYYY-MM-DD)
+   '''
+   Check if the provided date url arguments are valid.
 
-   if not start_date or not end_date or start_date > end_date:     #(+check if start date is smaller than end date)
+   Parameters:
+   - args_list (dict): A dictionary containing date arguments in the format 'YYYY-MM-DD'
+
+   Returns:
+   - bool: True if the date arguments are valid, False otherwise.
+
+   '''
+
+   start_date = argsList.get('start') 
+   end_date = argsList.get('end')     
+
+   if not start_date or not end_date or start_date > end_date:
       print("Argument not provided")
       return False
    return True
 
 
-def create_session():
-   engine = create_engine(os.getenv('CONNECTION_DB_STRING'))
-   Session = sessionmaker(bind=engine)
-   session = Session()
-   return session
-
-
 def import_data(db):
+
+   '''
+   Import data from a CSV file into Bookstore database.
+
+   Parameters:
+   - db: The SQLAlchemy database instance.
+
+   '''
+
     # Load data from CSV file
    csv_path = './data/Books.csv'
    data = pd.read_csv(csv_path,nrows=1000)
@@ -58,9 +88,19 @@ def import_data(db):
 
 
 def days_between(d1, d2):
+
+   '''
+   Calculate the number of days between two dates.
+
+   Parameters:
+   - d1 (str): The first date in the format 'YYYY-MM-DD'.
+   - d2 (str): The second date in the format 'YYYY-MM-DD'.
+
+   Returns:
+   - int: The number of days between the two dates.
+
+   '''
+
    dt0 = pd.to_datetime(d1, format = '%Y-%m-%d')
    dt1 = pd.to_datetime(d2, format = '%Y-%m-%d')
    return (dt1 - dt0).days
-
-def user_data_is_valid(data):
-   return True
