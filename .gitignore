@@ -1,5 +1,4 @@
 .env
-/data
 /output
 ./app/__pycache__
 __pycache__
