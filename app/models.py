@@ -29,6 +29,12 @@ class RentedHistory(db.Model):
     book = db.relationship('Book', backref='rented_histories', foreign_keys=[isbn])
     user_info = db.relationship('User', backref='rented_histories', foreign_keys=[user])
 
+    # I would rather that this file remains only about the DB models.
+    # Methods to convert from and to RentedHistory should take place in another middle-file
+    # between front and back end.
+    # In this extra file, also introduce some control mechanisms to ensure that the data is 
+    # handled properly
+
     def to_dict(self):
         """Convert the Book instance to a dictionary."""
         return {
