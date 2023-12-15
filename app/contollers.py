@@ -129,6 +129,8 @@ class HistoryService:
         '''
 
         data = RentedHistory.query.get(int(rented_id))
+        # Try: return date if data else None
+        # You also check for 'data' after this function returns.
         if data: return data 
         return None
 
@@ -214,6 +216,8 @@ class HistoryService:
         if return_type.lower() == "list":
             data = []
             for instance in rented_books:
+                # data.append(instance.book.to_dict()) in a list comprehension perhaps. 
+                # anyway, it is ok as is 
                 book = instance.book
                 data.append(book.to_dict())
             return data
