@@ -220,6 +220,13 @@ class HistoryService:
         return rented_books
     
 
+    # Better describe the input-arg and return types of the function within the function declaration
+    # and only the parameters' description in the function description.
+    # calculate_tot...(
+    #     self,
+    #     rented_books: List[what type of items]            Maybe you will have to import a library for that
+    # ) -> float:
+    #     ...
     def calculate_total_rental_fee(self, rented_books):
 
         '''
