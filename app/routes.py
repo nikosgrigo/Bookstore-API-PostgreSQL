@@ -123,7 +123,8 @@ def get_total_revenue():
    data = HistoryService.calculate_total_rental_fee(rentedBooks)
 
    export_to_csv(data,"totalRevenue")
-      
+
+   # Why > 0?
    if data > 0: return send_response(data,"success",200) 
    return send_response("There is not total revenue on this range","success",200)
 
