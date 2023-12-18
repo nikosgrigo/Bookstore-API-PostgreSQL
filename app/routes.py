@@ -1,5 +1,4 @@
-from flask import request, Response,Blueprint
-import json
+from flask import request,Blueprint
 from app.general import *
 from app.contollers import *
 
