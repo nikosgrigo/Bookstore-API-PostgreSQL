@@ -1,6 +1,7 @@
 from app.models import *
-from app.general import days_between
+import pandas as pd
 import datetime
+from flask import jsonify, make_response
 
 
 class BookService:
@@ -37,10 +38,11 @@ class BookService:
 
         if identifier.lower() == 'isbn':
             data = Book.query.get(value)
-            return data.to_dict() if data else None
+            data = data.to_dict() if data else None
         else:
             data = Book.query.filter_by(**{identifier: value}).all()
-            return [book.to_dict() for book in data] if data else None
+            data = [book.to_dict() for book in data] if data else None
+        return data
 
 
     def is_available_for_rent(self,id):
@@ -74,6 +76,11 @@ class BookService:
 
         '''
 
+        if not book:
+            status_code = 400
+            response = jsonify({"message": "Book not available for rent", "status": "error", "status code":status_code})
+            return make_response(response, status_code)
+
 
         book.isAvailable = False
         print('Book Availability updated successfully!')
@@ -84,38 +91,26 @@ class BookService:
         # Format as "YYYY-MM-DD"
         formatted_date = date.strftime('%Y-%m-%d')
 
-        #check if book is already inserted on the list of history table
-        rentedBook =  RentedHistory.query.get(book.isbn)
-
         #--------ONLY FOR DEVELOPEMENT PURPOSES--------
         userId = 1
         #--------ONLY FOR DEVELOPEMENT PURPOSES--------
 
-        if rentedBook:
-            rentedBook.start_date = formatted_date
-            print('Rented book date updated successfully!')
-        else:
-            # Create an instance of RentedHistory
-            new_rented_book = RentedHistory(
-                total_cost = 0,
-                start_date = formatted_date,
-                end_date = None,
-                isbn = book.isbn,
-                user = userId
-            )
 
-            # Add the instance to the session
-            db.session.add(new_rented_book)
+        new_rented_book = RentedHistory(0,formatted_date,None,book.isbn,userId)
 
-            print('Created new instance for rented book successfully!')
-
-
+        # Add the instance to the session
+        db.session.add(new_rented_book)
+        print('Created new instance for rented book successfully!')
         db.session.commit()
+
+        status_code = 200
+        response = jsonify({"message": "Book rented successfully", "status": "success", "status code":status_code})
+        return make_response(response, status_code)
         
 
 class HistoryService:
 
-    def get_rented_book(self,rented_id):
+    def get_rented_book(self,book_id):
 
         '''
         Get information about a rented book based on its rented ID.
@@ -128,7 +123,9 @@ class HistoryService:
 
         '''
 
-        data = RentedHistory.query.get(int(rented_id))
+        userID = 1
+
+        data = RentedHistory.query.filter_by(isbn = book_id, user = userID).first()
         if data: return data 
         return None
 
@@ -146,14 +143,16 @@ class HistoryService:
         - float: The calculated rental fee.
 
         '''
-
-        days = days_between(start,end)
+  
+        dt0 = pd.to_datetime(start, format = '%Y-%m-%d')
+        dt1 = pd.to_datetime(end, format = '%Y-%m-%d')
+        days = (dt1 - dt0).days
 
         if days <= 3:
             return days*1
         return 3*1 + (days-3)*0.5
-        
     
+
     def return_book(self, rentedBook, db):
 
         '''
@@ -167,6 +166,11 @@ class HistoryService:
         - float: The calculated rental fee for the returned book.
 
         '''
+
+        if not rentedBook:
+            status_code = 400
+            response = jsonify({"message": "Book not found or not currently rented", "status": "error", "status code":status_code})
+            return make_response(response, status_code)
 
         # 1. Change Availability on Book table to True using foreign key
         book = rentedBook.book
@@ -188,9 +192,11 @@ class HistoryService:
 
         db.session.commit()
 
-        return rental_fee
-    
+        status_code = 200
+        response = jsonify({"message": "Book returned successfully","rental_fee":rental_fee, "status": "success", "status code":status_code})
+        return make_response(response, status_code)
 
+    
     def get_all_rented_books_for_period(self, start, end, return_type):
 
         '''
@@ -220,13 +226,6 @@ class HistoryService:
         return rented_books
     
 
-    # Better describe the input-arg and return types of the function within the function declaration
-    # and only the parameters' description in the function description.
-    # calculate_tot...(
-    #     self,
-    #     rented_books: List[what type of items]            Maybe you will have to import a library for that
-    # ) -> float:
-    #     ...
     def calculate_total_rental_fee(self, rented_books):
 
         '''
@@ -244,3 +243,39 @@ class HistoryService:
         return total
         
     
+class UserService:
+
+
+    def get_all_users(self):
+        data = User.query().all()
+        data = [book.to_dict() for book in data]
+        return data
+
+
+    def get_user_by_id(self, id):
+        data = User.query.get(id)
+        return data.to_dict()
+
+
+    def create_user(self, json_data, db):
+
+        username, email, password, isAdmin = json_data.values()
+        isAdmin = bool(isAdmin)
+
+        if not self.check_if_user_exists(username, email):       #Check if user already exists
+
+            new_user = User(username = username,
+                             email = email,
+                             password = password,
+                             isAdmin = isAdmin
+                             )
+            db.session.add(new_user)
+            db.session.commit()
+            return True
+        return False
+
+
+    def check_if_user_exists(self, username, email):
+        data = User.query.filter(User.username == username, User.email == email).first()
+        
+        return True if data else False

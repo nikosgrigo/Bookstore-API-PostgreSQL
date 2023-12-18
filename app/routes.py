@@ -1,120 +1,93 @@
-from flask import request, Response
-from app import app, db
+from flask import request, Response,Blueprint
 import json
 from app.general import *
 from app.contollers import *
 
+main_app = Blueprint('main', __name__)
 
 BookService = BookService()
 HistoryService = HistoryService()
+UserService = UserService()
 
 # Retrieve a list of all available books
-@app.route('/books',methods = ['GET'])
+@main_app.route('/books',methods = ['GET'])
 def get_all_books():
    data = BookService.get_all_books()
-   return send_response(data,"success",200)
+   return send_response(data)
 
 
 # Retrieve a list of available books based on a specified category.
-@app.route('/author/<author>',methods = ['GET'])
-def get_all_books_by_author(author):
-
+@main_app.route('/author/<author>',methods = ['GET'])
+def get_books_by_author(author):
    data = BookService.get_book_by_identifier('author',author)
-
-   if data:
-      return send_response(data,"success",200)
-   return send_response("Books not found","error",404)
+   return send_response(data)
    
                
 # Retrieve detailed information about a specific book.
-@app.route('/book/<id>',methods = ['GET'])
-def get_all_books_by_id(id):
-
+@main_app.route('/book/<id>',methods = ['GET'])
+def get_books_by_id(id):
    data = BookService.get_book_by_identifier('isbn',id)
-
-   if data:
-      return send_response(data,"success",200)         
-   return send_response("Books not found","error",404)
+   return send_response(data)
 
 
 # Retrieve a list of available books that was released by a specific publisher
-@app.route('/publisher/<publisher>',methods = ['GET'])
-def get_all_books_by_publisher(publisher):
-
+@main_app.route('/publisher/<publisher>',methods = ['GET'])
+def get_books_by_publisher(publisher):
    data = BookService.get_book_by_identifier('publisher',publisher)
-
-   if data:
-      return send_response(data,"success",200)
-   return send_response("Books not found","error",404)
+   return send_response(data)
 
 
 #Retrieve a list of available books that was released on a specific year or between certain dates (e.g., from 2000 to 2005)
-@app.route('/date/<date>',methods = ['GET'])
-def get_all_books_by_date(date):
-
+@main_app.route('/date/<date>',methods = ['GET'])
+def get_books_by_date(date):
    data = BookService.get_book_by_identifier('year_of_publication',date)
-
-   if data:
-
-      return send_response(data,"success",200)
-   return send_response("Books not found","error",404)
+   return send_response(data)
 
 
 #Rent a book, making it unavailable for others to rent.
-@app.route('/rent/<id>',methods = ['POST'])
+@main_app.route('/rent/<id>',methods = ['POST'])
 def set_book_as_rented(id):
-   
    data = BookService.is_available_for_rent(id)
+   return BookService.rent_book(data,db)
 
-   if not data:
-      return send_response("Book not available for rent","error",400)
-   else:
-      BookService.rent_book(data,db)
-      return send_response("Book rented successfully","success",200)
    
 
 # Return a rented book and calculate the rental fee based on the number of days rented.
-@app.route('/return/<id>',methods = ['PUT'])
+@main_app.route('/return/<id>',methods = ['PUT'])
 def get_rented_book(id):
-
-      data = HistoryService.get_rented_book(id)
-
-      if(data):
-
-         rental_fee = HistoryService.return_book(data,db)
-
-         return Response(json.dumps({"status":"success","status code":200,"message": "Book returned successfully", "rental_fee": rental_fee}), content_type='application/json', status=200)
-      return Response(json.dumps({"status":"error","status code":400,"message": "Book not found or not currently rented"}), content_type='application/json', status=400)
+   data = HistoryService.get_rented_book(id)
+   return HistoryService.return_book(data,db)
 
 
 # Retrieve a list of books that were rented within a specified date range.
-@app.route('/rentals',methods = ['GET'])
+@main_app.route('/rentals',methods = ['GET'])
 def get_rentals():
-      
-   # 1. Check if the url with date pars has changed or contains invalid pars
-   if is_date_args_valid(request.args):
-  
-      start_date = request.args.get('start')
-      end_date = request.args.get('end')
 
-      #2.Find all books that have been rented on a specific period
-      data = HistoryService.get_all_rented_books_for_period(start_date,end_date,'list')
+   valid_dates = is_date_args_valid(request.args)
 
-      export_to_csv(data,"Rentals")
+   if not valid_dates:
+      return send_response("Please provide valid dates")
 
-      return send_response(data,"success",200) 
-   return send_response("Please provide valid dates","error",400) 
+   start_date,end_date = valid_dates
+
+   #2.Find all books that have been rented on a specific period
+   data = HistoryService.get_all_rented_books_for_period(start_date,end_date,'list')
+
+   export_to_csv(data,"Rentals")
+
+   return send_response(data) 
 
 
 #Calculate and retrieve the total revenue generated by book rentals within a specified date range.
-@app.route('/revenue',methods = ['GET'])
+@main_app.route('/revenue',methods = ['GET'])
 def get_total_revenue():
 
-   if not is_date_args_valid(request.args): 
-      return send_response("Please provide valid dates","error",400) 
-    
-   start_date = request.args.get('start')
-   end_date = request.args.get('end')
+   valid_dates = is_date_args_valid(request.args)
+   
+   if not valid_dates:
+      return send_response("Please provide valid dates")
+
+   start_date,end_date = valid_dates
 
    #1.Find all books that have been rented on a specific period
    rentedBooks = HistoryService.get_all_rented_books_for_period(start_date,end_date,'instances')
@@ -124,6 +97,6 @@ def get_total_revenue():
 
    export_to_csv(data,"totalRevenue")
       
-   if data > 0: return send_response(data,"success",200) 
-   return send_response("There is not total revenue on this range","success",200)
+   return send_response(data,"success",200) 
+
 

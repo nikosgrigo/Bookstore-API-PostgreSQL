@@ -29,6 +29,13 @@ class RentedHistory(db.Model):
     book = db.relationship('Book', backref='rented_histories', foreign_keys=[isbn])
     user_info = db.relationship('User', backref='rented_histories', foreign_keys=[user])
 
+    def __init__(self, total_cost, start_date, end_date, isbn, user):
+        self.total_cost = total_cost
+        self.start_date = start_date
+        self.end_date = end_date
+        self.isbn = isbn
+        self.user = user
+
     def to_dict(self):
         """Convert the Book instance to a dictionary."""
         return {
@@ -58,6 +65,23 @@ class Book(db.Model):
     rented_now = db.Column(db.Integer)
     rating = db.Column(db.Integer)
     isAvailable = db.Column(db.Boolean, default=True)
+
+
+    def __init__(self, isbn, title, author, year_of_publication, publisher,
+                 image_url_s, image_url_m, image_url_l, rented_now, rating, isAvailable=True):
+        self.isbn = isbn
+        self.title = title
+        self.author = author
+        self.year_of_publication = year_of_publication
+        self.publisher = publisher
+        self.image_url_s = image_url_s
+        self.image_url_m = image_url_m
+        self.image_url_l = image_url_l
+        self.rented_now = rented_now
+        self.rating = rating
+        self.isAvailable = isAvailable
+
+
 
 
     def to_dict(self):
