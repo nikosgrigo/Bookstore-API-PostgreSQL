@@ -99,3 +99,27 @@ def get_total_revenue():
    return send_response(data,"success",200) 
 
 
+#Create a new user account
+@main_app.route('/user',methods = ['POST'])
+def create_new_user():
+
+   #1. Get user data from json 
+   data = request.json
+
+   #2. Check if required fields are valid and present
+   if not user_data_is_valid(data):
+      send_response("Invalid request body","error",400) 
+
+   return UserService.create_user(data, db)
+
+
+#Retrieve information about a specific user
+@main_app.route('/user/<id>',methods = ['GET'])
+def get_user(id):
+   return UserService.get_user_by_id(id)
+
+
+
+
+
+

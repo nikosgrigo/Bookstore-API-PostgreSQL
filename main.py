@@ -19,14 +19,13 @@ db.init_app(app)
 # Register blueprints
 app.register_blueprint(main_app)
 
-
 # Create the database tables
 with app.app_context():
     try:
         db.create_all()
         import_data(db)
     except:
-        print('DB already exists!')
+        print('Loading Database and Tables...')
   
 
 if __name__ == '__main__':

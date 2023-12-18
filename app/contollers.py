@@ -220,8 +220,6 @@ class HistoryService:
         if return_type.lower() == "list":
             data = []
             for instance in rented_books:
-                # data.append(instance.book.to_dict()) in a list comprehension perhaps. 
-                # anyway, it is ok as is 
                 book = instance.book
                 data.append(book.to_dict())
             return data
@@ -247,7 +245,6 @@ class HistoryService:
     
 class UserService:
 
-
     def get_all_users(self):
         data = User.query().all()
         data = [book.to_dict() for book in data]
@@ -255,29 +252,50 @@ class UserService:
 
 
     def get_user_by_id(self, id):
+
+        #1. Find current user
         data = User.query.get(id)
-        return data.to_dict()
+
+        if not data:
+            status_code = 404
+            response = jsonify({"message": "User not found", "status": "error", "status code":status_code})
+            return make_response(response, status_code)
+
+
+        #2. Find all rentals for this specific user on history table
+        rented_books = RentedHistory.query.filter_by(user = id, end_date = None)
+
+        #3. For each rental get book info and insert it into a rented_books list
+        rented_books_info = []
+        # For each instance, retrieve the corresponding book information
+        for rented_instance in rented_books:
+            book = Book.query.filter_by(isbn = rented_instance.isbn).first()
+            rented_books_info.append(book.to_dict())
+
+        data = data.to_dict(rented_books_info)
+    
+        status_code = 200
+        response = jsonify({"data": data, "status": "success", "status code":status_code})
+        return make_response(response, status_code)
 
 
     def create_user(self, json_data, db):
 
-        username, email, password, isAdmin = json_data.values()
-        isAdmin = bool(isAdmin)
+        username, email, password = json_data.values()
 
-        if not self.check_if_user_exists(username, email):       #Check if user already exists
+        already_user = User.query.filter(User.username == username, User.email == email).first()
 
-            new_user = User(username = username,
-                             email = email,
-                             password = password,
-                             isAdmin = isAdmin
-                             )
-            db.session.add(new_user)
-            db.session.commit()
-            return True
-        return False
+        if already_user:
+            status_code = 409
+            response = jsonify({"message": "Username or email already exists", "status": "error", "status code":status_code})
+            return make_response(response, status_code)
 
+        new_user = User(username, email, password)
 
-    def check_if_user_exists(self, username, email):
-        data = User.query.filter(User.username == username, User.email == email).first()
-        
-        return True if data else False
+        db.session.add(new_user)
+        db.session.commit()
+
+        status_code = 201
+        response = jsonify({"message": "User created successfully", "status": "success", "status code":status_code})
+        return make_response(response, status_code)
+

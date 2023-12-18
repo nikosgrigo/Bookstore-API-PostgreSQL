@@ -104,3 +104,9 @@ def export_to_csv(data,path):
       df = pd.DataFrame({"total_revenue": [data]}) 
       df.to_csv(f"./output/{path}.csv", index=False)
 
+
+def user_data_is_valid(data):
+   # Validate incoming data
+    if 'username' not in data or 'email' not in data or 'password' not in data:
+       return False
+    return True

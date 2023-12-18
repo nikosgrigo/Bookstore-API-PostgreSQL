@@ -1,5 +1,7 @@
 
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 db = SQLAlchemy()
 
@@ -12,6 +14,25 @@ class User(db.Model):
     password = db.Column(db.String, nullable=False)
     isAdmin = db.Column(db.Boolean, default=False)
 
+    def __init__(self, username, email, password, isAdmin=False):
+        self.username = username
+        self.email = email
+        self.set_password(password)
+        self.isAdmin = False
+
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
+    
+    def to_dict(self,rented_books):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'rented_books': rented_books     
+            }
 
 class RentedHistory(db.Model):
     __tablename__ = 'history'
