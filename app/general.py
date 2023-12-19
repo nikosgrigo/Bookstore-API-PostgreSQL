@@ -1,7 +1,11 @@
 
 from flask import jsonify, make_response
 import pandas as pd
-from app.models import Book
+from app.models import Book,User
+
+from functools import wraps
+import jwt,os
+from flask import request
 
 def send_response(response_data):
 
@@ -104,9 +108,32 @@ def export_to_csv(data,path):
       df = pd.DataFrame({"total_revenue": [data]}) 
       df.to_csv(f"./output/{path}.csv", index=False)
 
-
 def user_data_is_valid(data):
    # Validate incoming data
     if 'username' not in data or 'email' not in data or 'password' not in data:
        return False
     return True
+
+# decorator for verifying the JWT
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+
+        if not token:
+            return jsonify({'message' : 'Token is missing !!'}), 401
+  
+        try:
+            data = jwt.decode(token, os.getenv('SECRET_KEY'), algorithms=['HS256'])
+            current_user = User.query.filter_by(id = data['user_id']).first()
+            
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Invalid token'}), 401
+        # returns the current logged in users context to the routes
+        return  f(current_user, *args, **kwargs)
+  
+    return decorated

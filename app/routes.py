@@ -1,6 +1,7 @@
 from flask import request,Blueprint
 from app.general import *
-from app.contollers import *
+from app.contollers import BookService,UserService,HistoryService
+from app.models import db
 
 main_app = Blueprint('main', __name__)
 
@@ -44,17 +45,18 @@ def get_books_by_date(date):
 
 
 #Rent a book, making it unavailable for others to rent.
-@main_app.route('/rent/<id>',methods = ['POST'])
-def set_book_as_rented(id):
-   data = BookService.is_available_for_rent(id)
-   return BookService.rent_book(data,db)
+@main_app.route('/rent/<book_id>',methods = ['POST'])
+@token_required
+def set_book_as_rented(current_user,book_id):
+   data = BookService.is_available_for_rent(book_id)
+   return BookService.rent_book(data,db, current_user.id)
 
    
-
 # Return a rented book and calculate the rental fee based on the number of days rented.
-@main_app.route('/return/<id>',methods = ['PUT'])
-def get_rented_book(id):
-   data = HistoryService.get_rented_book(id)
+@main_app.route('/return/<book_id>',methods = ['PUT'])
+@token_required
+def get_rented_book(current_user, book_id):
+   data = HistoryService.get_rented_book(book_id, current_user.id)
    return HistoryService.return_book(data,db)
 
 
@@ -118,6 +120,13 @@ def create_new_user():
 def get_user(id):
    return UserService.get_user_by_id(id)
 
+@main_app.route('/login',methods = ['POST'])
+def login():
+   
+   #1. Get user credentials from json 
+   auth = request.json
+
+   return UserService.login(auth)
 
 
 

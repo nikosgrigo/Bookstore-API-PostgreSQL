@@ -1,7 +1,8 @@
 from app.models import *
 import pandas as pd
-import datetime
+from datetime import datetime, timedelta
 from flask import jsonify, make_response
+import jwt,os
 
 
 class BookService:
@@ -65,7 +66,7 @@ class BookService:
         return False
 
 
-    def rent_book(self,book,db):
+    def rent_book(self,book,db,user_id):
 
         '''
         Rent a book, update availability, and record the transaction in the rented history.
@@ -86,17 +87,12 @@ class BookService:
         print('Book Availability updated successfully!')
 
         #Create new timestamp
-        date = datetime.datetime.now()
+        date = datetime.now()      ###OK
 
         # Format as "YYYY-MM-DD"
         formatted_date = date.strftime('%Y-%m-%d')
 
-        #--------ONLY FOR DEVELOPEMENT PURPOSES--------
-        userId = 1
-        #--------ONLY FOR DEVELOPEMENT PURPOSES--------
-
-
-        new_rented_book = RentedHistory(0,formatted_date,None,book.isbn,userId)
+        new_rented_book = RentedHistory(0,formatted_date,None,book.isbn,user_id)
 
         # Add the instance to the session
         db.session.add(new_rented_book)
@@ -110,7 +106,7 @@ class BookService:
 
 class HistoryService:
 
-    def get_rented_book(self,book_id):
+    def get_rented_book(self,book_id, user_id):
 
         '''
         Get information about a rented book based on its rented ID.
@@ -123,9 +119,9 @@ class HistoryService:
 
         '''
 
-        userID = 1
+        # userID = 1
 
-        data = RentedHistory.query.filter_by(isbn = book_id, user = userID).first()
+        data = RentedHistory.query.filter_by(isbn = book_id, user = user_id).first()
         if data: return data 
         return None
 
@@ -178,7 +174,7 @@ class HistoryService:
 
         # 2. Update end_date for current book
 
-        date = datetime.datetime.now()      
+        date = datetime.now()      
         end_date = date.strftime('%Y-%m-%d')
 
         rentedBook.end_date = end_date
@@ -299,3 +295,55 @@ class UserService:
         response = jsonify({"message": "User created successfully", "status": "success", "status code":status_code})
         return make_response(response, status_code)
 
+
+    def login(self, credentials):
+
+        if not credentials or not credentials.get('email') or not credentials.get('password'):
+            response = jsonify({"message": "Could not verify", "status": "error", "status code":401})
+            return make_response(response, 401)
+        
+        #1. Get data from json request
+        email, password = credentials.values()
+
+        #2. Find current user on the system
+        user = User.query.filter_by(email = email).first()
+
+        #3. Check for user existance - if not return 404
+        if not user:
+            response = jsonify({"message": "User not found", "status": "error", "status code":404})
+            return make_response(response, 404)
+
+        #4. Check for valid credentials from user - if not return 401
+        if not user.check_password(password):
+            response = jsonify({"message": "Invalid credentials", "status": "error", "status code":401})
+            return make_response(response, 401)           
+
+        # 5. OK ready to login and create new JWT for user
+        return self.generate_token(user.id)
+
+
+    def generate_token(self, id):
+            token = jwt.encode({
+                "user_id": id,
+                "expiration": str(datetime.utcnow() + timedelta(seconds = 120))
+            },os.getenv('SECRET_KEY'))
+
+            response = jsonify({
+                                "message": "Login successful",
+                                "access_token": token,
+                                "token_type": "Bearer"
+                                })
+            
+            return make_response(response, 200) 
+
+        # except jwt.ExpiredSignatureError:
+        #     response = jsonify({"message": "Token has expired", "status": "error", "status_code": 401})
+        #     return make_response(response, 401)
+
+        # except jwt.InvalidTokenError:
+        #     response = jsonify({"message": "Invalid token", "status": "error", "status_code": 401})
+        #     return make_response(response, 401)
+
+        # except Exception as e:
+        #     response = jsonify({"message": "Login failed", "status": "error", "status_code": 403})
+        #     return make_response(response, 403)

@@ -2,7 +2,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
 db = SQLAlchemy()
 
 class User(db.Model):
@@ -67,7 +66,6 @@ class RentedHistory(db.Model):
             'end_date': self.end_date,
         }
     
-
 class Book(db.Model):
     __tablename__ = 'books'
 
