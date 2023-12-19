@@ -1,13 +1,14 @@
 from flask import request,Blueprint
 from app.general import *
-from app.contollers import BookService,UserService,HistoryService
 from app.models import db
+from app.controllers import BookController,UserController,HistoryController
+
 
 main_app = Blueprint('main', __name__)
 
-BookService = BookService()
-HistoryService = HistoryService()
-UserService = UserService()
+BookService = BookController.BookService()
+HistoryService = HistoryController.HistoryService()
+UserService = UserController.UserService()
 
 # Retrieve a list of all available books
 @main_app.route('/books',methods = ['GET'])
