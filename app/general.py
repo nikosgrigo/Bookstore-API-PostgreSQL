@@ -28,6 +28,8 @@ def send_response(response_data):
    else:
       status_code = 404
       response = jsonify({"message": "No data available", "status": "error", "status code":status_code})
+      if response_data.lower() == 'adminerror':
+         response = jsonify({"message": "Oops you do not have the permission!", "status": "error", "status code":status_code})
 
    return make_response(response, status_code)
 
@@ -127,13 +129,19 @@ def token_required(f):
   
         try:
             data = jwt.decode(token, os.getenv('SECRET_KEY'), algorithms=['HS256'])
-            current_user = User.query.filter_by(id = data['user_id']).first()
+            user = User.query.filter_by(id = data['user_id']).first()
+
+            # Create a dictionary with only the desired attributes
+            user = {
+                'id': user.id,
+                'isAdmin': user.isAdmin
+            }
             
         except jwt.ExpiredSignatureError:
             return jsonify({'message': 'Token has expired'}), 401
         except jwt.InvalidTokenError:
             return jsonify({'message': 'Invalid token'}), 401
         # returns the current logged in users context to the routes
-        return  f(current_user, *args, **kwargs)
+        return  f(user, *args, **kwargs)
   
     return decorated

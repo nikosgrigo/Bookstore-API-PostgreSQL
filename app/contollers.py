@@ -2,7 +2,9 @@ from app.models import *
 import pandas as pd
 from datetime import datetime, timedelta
 from flask import jsonify, make_response
-import jwt,os
+import jwt
+from sqlalchemy import or_
+import os
 
 
 class BookService:
@@ -118,8 +120,7 @@ class HistoryService:
         - The rented book information if found, None otherwise.
 
         '''
-
-        # userID = 1
+  
 
         data = RentedHistory.query.filter_by(isbn = book_id, user = user_id).first()
         if data: return data 
@@ -149,7 +150,7 @@ class HistoryService:
         return 3*1 + (days-3)*0.5
     
 
-    def return_book(self, rentedBook, db):
+    def return_book(self, rentedBook, db, isAdmin):
 
         '''
         Return a rented book, update book availability, and record the return transaction in the rented history.
@@ -162,6 +163,9 @@ class HistoryService:
         - float: The calculated rental fee for the returned book.
 
         '''
+        if not isAdmin:
+            response = jsonify({"message": "Oops sorry you don't have access!", "status": "error", "status code":403})
+            return make_response(response, 403)
 
         if not rentedBook:
             status_code = 400
@@ -208,10 +212,10 @@ class HistoryService:
 
         '''
 
-        rented_books = RentedHistory.query.filter(RentedHistory.end_date.isnot(None),
-                                                  RentedHistory.start_date >= start,
-                                                  RentedHistory.end_date <= end).all()
-        
+        rented_books = RentedHistory.query.filter((RentedHistory.start_date >= start) &
+                                                (or_(RentedHistory.end_date <= end, 
+                                                     RentedHistory.end_date.is_(None)))).all()
+
 
         if return_type.lower() == "list":
             data = []
