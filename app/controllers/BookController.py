@@ -1,7 +1,8 @@
 from app.models import Book,RentedHistory
-
+from app.general import to_dict,send_response
 from datetime import datetime
-from flask import jsonify, make_response
+
+
 
 class BookService:
 
@@ -16,8 +17,9 @@ class BookService:
         '''
 
         data = Book.query.filter_by(isAvailable=True).all()
-        data = [book.to_dict() for book in data]
+        data = [to_dict(book) for book in data]
         return data
+
 
     def get_book_by_identifier(self, identifier:str,value):
 
@@ -35,51 +37,24 @@ class BookService:
         '''
 
         if identifier.lower() == 'isbn':
-            data = Book.query.get(value)
-            data = data.to_dict() if data else None
+            book = Book.query.get(value)
+            data = to_dict(book) if book else None
         else:
             data = Book.query.filter_by(**{identifier: value}).all()
-            data = [book.to_dict() for book in data] if data else None
+            data = [to_dict(book) for book in data] if data else None
         return data
 
-    def is_available_for_rent(self,id):
 
-        '''
-        Check if a book is available for rent based on its ID.
+    def rent_book(self, db, user_id, book_id):
 
-        Parameters:
-        - id: The isbn of the book.
+        book = Book.query.get(book_id)
 
-        Returns:
-        - Book or bool: The book instance if it is available for rent, False otherwise.
-
-        '''
-
-        # Check if book is rented now based on availability
-        book = Book.query.get(id)
-        if book and book.isAvailable:
-            return book
-        return False
-
-    def rent_book(self,book,db,user_id):
-
-        '''
-        Rent a book, update availability, and record the transaction in the rented history.
-
-        Parameters:
-        - book: The book instance to be rented.
-        - db: The SQLAlchemy database instance.
-
-        '''
-
-        if not book:
-            status_code = 400
-            response = jsonify({"message": "Book not available for rent", "status": "error", "status code":status_code})
-            return make_response(response, status_code)
-
+        # Check if book exists and if it is available for rent
+        if not book or not book.isAvailable:
+            return send_response("Book not available for rent", 400)
+        
 
         book.isAvailable = False
-        print('Book Availability updated successfully!')
 
         #Create new timestamp
         date = datetime.now()      
@@ -87,13 +62,13 @@ class BookService:
         # Format as "YYYY-MM-DD"
         formatted_date = date.strftime('%Y-%m-%d')
 
+        # Create new instance on History table
         new_rented_book = RentedHistory(0,formatted_date,None,book.isbn,user_id)
 
         # Add the instance to the session
         db.session.add(new_rented_book)
-        print('Created new instance for rented book successfully!')
         db.session.commit()
 
-        response = jsonify({"message": "Book rented successfully", "status": "success", "status code":200})
-        return make_response(response, status_code)
+        return send_response("Book rented successfully", 200)
         
+

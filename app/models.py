@@ -24,14 +24,6 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
-    
-    def to_dict(self,rented_books):
-        return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email,
-            'rented_books': rented_books     
-            }
 
 class RentedHistory(db.Model):
     __tablename__ = 'history'
@@ -56,16 +48,6 @@ class RentedHistory(db.Model):
         self.isbn = isbn
         self.user = user
 
-    def to_dict(self):
-        """Convert the Book instance to a dictionary."""
-        return {
-            'id': self.id,
-            'isbn': self.isbn,
-            'total_cost': self.total_cost,
-            'start_date': self.start_date,
-            'end_date': self.end_date,
-        }
-    
 class Book(db.Model):
     __tablename__ = 'books'
 
@@ -103,15 +85,16 @@ class Book(db.Model):
 
 
 
-    def to_dict(self):
-        """Convert the Book instance to a dictionary."""
-        return {
-            'isbn': self.isbn,
-            'title': self.title,
-            'author': self.author,
-            'year_of_publication': self.year_of_publication,
-            'publisher': self.publisher,
-            'image_url_s': self.image_url_s,
-            'image_url_m': self.image_url_m,
-            'image_url_l': self.image_url_l,
-        }
+    # def to_dict(self):
+    #     """Convert the Book instance to a dictionary."""
+    #     return {
+    #         'isbn': self.isbn,
+    #         'title': self.title,
+    #         'author': self.author,
+    #         'year_of_publication': self.year_of_publication,
+    #         'publisher': self.publisher,
+    #         'image_url_s': self.image_url_s,
+    #         'image_url_m': self.image_url_m,
+    #         'image_url_l': self.image_url_l,
+    #     }
+

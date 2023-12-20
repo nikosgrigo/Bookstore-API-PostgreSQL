@@ -1,37 +1,44 @@
 
-from flask import jsonify, make_response
-import pandas as pd
-from app.models import Book,User
-
+from flask import jsonify, make_response,request
+from app.models import Book,User,RentedHistory
 from functools import wraps
-import jwt,os
-from flask import request
+import jwt,os,logging
+import pandas as pd
 
-def send_response(response_data):
 
-   '''
-   Send an HTTP response with JSON content.
+def send_response(data_or_message, status_code=None):
+    """
+    Generate a JSON response.
 
-   Parameters:
-   - response_data (dict): The data to be included in the response.
-   - status (str): The status of the response, either 'success' or another status.
-   - status_code (int): The HTTP status code to be included in the response.
+    Parameters:
+    - data_or_message: Either the data to be included in the response or an error message.
+    - status_code: The HTTP status code (default is None).
 
-   Returns:
-   - Response: An HTTP response with JSON content.
+    Returns:
+    - A Flask JSON response.
 
-   '''
+    """
 
-   if response_data and not isinstance(response_data, str):
-      status_code = 200
-      response = jsonify({"data": response_data, "status": "success", "status code":status_code})
-   else:
-      status_code = 404
-      response = jsonify({"message": "No data available", "status": "error", "status code":status_code})
-      if response_data.lower() == 'adminerror':
-         response = jsonify({"message": "Oops you do not have the permission!", "status": "error", "status code":status_code})
+    response_data = {
+            "status": "success",
+            "status code": 200,
+    }
 
-   return make_response(response, status_code)
+    if isinstance(data_or_message, str) and status_code != 200:
+        response_data["message"] = data_or_message
+        response_data["status"] = "error"
+        response_data["status code"] = status_code
+
+    elif (isinstance(data_or_message, list) and not data_or_message) or data_or_message == None:
+        response_data["data"] = "No data available!"
+    elif status_code == 201:
+        response_data["message"] = data_or_message
+        response_data["status code"] = status_code
+    else:                                 
+        response_data["data"] = data_or_message
+
+    return make_response(response_data, status_code)
+
 
 def is_date_args_valid(argsList):
 
@@ -50,9 +57,10 @@ def is_date_args_valid(argsList):
    end_date = argsList.get('end')     
 
    if not start_date or not end_date or start_date > end_date:
-      print("Argument not provided")
+      print("Argument not provided or are not valid")
       return []
    return [start_date,end_date]
+
 
 def import_data(db):
 
@@ -88,7 +96,8 @@ def import_data(db):
       # Commit changes to the database
    db.session.commit()
 
-def export_to_csv(data,path):
+
+def export_to_csv(data, path):
 
    """
     Export data for rental and total revenue to CSV files.
@@ -110,13 +119,14 @@ def export_to_csv(data,path):
       df = pd.DataFrame({"total_revenue": [data]}) 
       df.to_csv(f"./output/{path}.csv", index=False)
 
+
 def user_data_is_valid(data):
    # Validate incoming data
     if 'username' not in data or 'email' not in data or 'password' not in data:
        return False
     return True
 
-# decorator for verifying the JWT
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -145,3 +155,45 @@ def token_required(f):
         return  f(user, *args, **kwargs)
   
     return decorated
+
+
+def to_dict(instance):
+
+    if hasattr(instance, '__dict__'):
+        # Exclude specific attributes for user instance and SQLalchemy
+        excluded_attributes = ['_sa_instance_state', 'password', 'isAdmin']
+        return {key: value for key, value in vars(instance).items() if key not in excluded_attributes}
+    else:
+        raise NotImplementedError("Object type not supported for conversion to dictionary.")
+
+
+def config_logger():
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:%(message)s', filename='db.log', encoding='utf-8')
+    logger = logging.getLogger('logger')
+    return logger
+
+
+def backup():
+        
+    rented_books = RentedHistory.query.filter(
+                   RentedHistory.end_date.is_(None),
+                    ).all()
+    
+    print(rented_books)
+
+    if not rented_books:
+        return False
+      
+
+    data = []
+    for rental in rented_books:
+        data.append(to_dict(rental))
+
+    print(data)
+
+    df = pd.DataFrame.from_records(data, exclude=['end_date','total_cost','id'])
+
+    df.to_csv('./output/backup.csv', index=False)
+
+    print(f'Data has been written!')
+    return True

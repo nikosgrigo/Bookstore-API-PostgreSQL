@@ -1,6 +1,4 @@
 from main import create_app
-from app.models import db,Book,User
-from app.contollers import UserService
 
 app = create_app()
 client = app.test_client()
@@ -69,48 +67,6 @@ def test_get_books_by_publisher():
         for book in data['data']:
             assert 'publisher' in book
             assert book['publisher'] == publisher
-
-
-# def test_set_book_as_rented():
-
-# # Assuming there is an existing user in the database with ID 1
-#     existing_user = User.query.get(1)
-
-#     # Assuming there is an existing book in the database with ISBN "your_test_book_id"
-#     test_book_id = "your_test_book_id"
-
-#     # Generate a valid token for the existing user
-#     test_token = generate_test_token(existing_user.id)
-
-#     # Make a request to the set_book_as_rented route with the generated token
-#     response = client.post(f'/rent/{test_book_id}', headers={'x-access-token': test_token})
-#     # Check that the response status code is 200 (OK) or the appropriate status code
-#     assert response.status_code == 200
-
-#     data = response.get_json()
-
-#     assert 'status' in data  
-#     assert data['status'] == 'success' 
-
-#     assert 'message' in data 
-#     assert data['message'] == 'Book rented successfully' 
-
-#     assert 'status code' in data 
-#     assert data['status code'] == 200
-
-#     #Check if book instance change on DB
-#     with app.app_context():
-#         book = db.session.query(Book).get(valid_book_id)
-#         assert book.isAvailable is False
-
-
-
-#     # invalid_book_id = "042518632"
-
-    
-#     # "message": "Book not available for rent",
-#     # "status": "error",
-#     # "status code": 400
         
 
 def test_get_rentals_invalid():
