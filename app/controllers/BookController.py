@@ -1,8 +1,6 @@
 from app.models import Book,RentedHistory
-from app.general import to_dict,send_response
+from app.utilities import to_dict,send_response
 from datetime import datetime
-
-
 
 class BookService:
 

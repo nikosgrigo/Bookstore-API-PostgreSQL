@@ -3,7 +3,7 @@ from app.models import RentedHistory, User
 from flask import jsonify, make_response
 from datetime import datetime, timedelta
 import os,jwt
-from app.general import to_dict,send_response
+from app.utilities import to_dict,send_response
 
 
 class UserService:

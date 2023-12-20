@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from dotenv import load_dotenv
 from app.models import db
-from app.general import import_data
+from app.utilities import import_data
 from app.routes import main_app
 
 def create_app():

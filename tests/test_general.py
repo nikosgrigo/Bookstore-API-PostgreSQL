@@ -1,5 +1,5 @@
 
-from app.general import is_date_args_valid as checkArgs
+from app.utilities import is_date_args_valid as checkArgs
 
 
 def test_valid_dates():
@@ -40,7 +40,7 @@ def test_dates_edge_cases():
     assert result == ['2023-01-01', '2023-01-31']
 
 
-from app.general import user_data_is_valid
+from app.utilities import user_data_is_valid
 
 def test_user_valid_data():
     data = {'username': 'john_doe', 'email': 'john@example.com', 'password': 'password123'}

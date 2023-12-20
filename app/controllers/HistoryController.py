@@ -1,5 +1,5 @@
 from app.models import RentedHistory
-from app.general import to_dict,send_response
+from app.utilities import to_dict,send_response
 import pandas as pd
 from datetime import datetime
 from sqlalchemy import or_
@@ -29,10 +29,13 @@ class HistoryService:
         return 3*1 + (days-3)*0.5
     
 
-    def return_book(self, db, book_id, user_id):
+    def return_book(self, db, book_id):
 
-        #1. Find book on history table based on isb and user-id
-        rentedBook = RentedHistory.query.filter_by(isbn = book_id, user = user_id).first()
+        #1. Find book on history table based on isbn and user-id
+        rentedBook = RentedHistory.query.filter(
+            RentedHistory.isbn == book_id,
+            RentedHistory.end_date.is_(None),
+        ).first()
 
         if not rentedBook:
             return send_response("Book not found or not currently rented", 400)

@@ -25,6 +25,7 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password, password)
 
+
 class RentedHistory(db.Model):
     __tablename__ = 'history'
 
@@ -47,6 +48,7 @@ class RentedHistory(db.Model):
         self.end_date = end_date
         self.isbn = isbn
         self.user = user
+
 
 class Book(db.Model):
     __tablename__ = 'books'

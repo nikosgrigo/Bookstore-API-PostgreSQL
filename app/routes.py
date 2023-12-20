@@ -1,5 +1,5 @@
 from flask import request,Blueprint
-from app.general import *
+from app.utilities import *
 from app.models import db
 from app.controllers import BookController,UserController,HistoryController
 
@@ -60,7 +60,7 @@ def get_rented_book(user, book_id):
    if not user['isAdmin']:
       return send_response("Oops you do not have the permission to access this resource.",403)
 
-   return HistoryService.return_book(db, book_id, user['id'])
+   return HistoryService.return_book(db, book_id)
 
 
 # Retrieve a list of books that were rented within a specified date range.    
@@ -80,7 +80,7 @@ def get_rentals(user):
 
    data = HistoryService.get_all_rented_books_for_period(start_date,end_date,'list')
 
-   # export_to_csv(data,"Rentals")
+   export_to_csv(data,"Rentals")
       
    return send_response(data) 
 
@@ -103,7 +103,7 @@ def get_total_revenue(user):
    # Calculate total revenue for this specific range
    data = HistoryService.calculate_total_rental_fee(start_date, end_date)
 
-   # export_to_csv(data,"totalRevenue")
+   export_to_csv(data,"totalRevenue")
       
    return send_response(data) 
 

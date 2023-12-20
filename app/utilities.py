@@ -161,7 +161,7 @@ def to_dict(instance):
 
     if hasattr(instance, '__dict__'):
         # Exclude specific attributes for user instance and SQLalchemy
-        excluded_attributes = ['_sa_instance_state', 'password', 'isAdmin']
+        excluded_attributes = ['_sa_instance_state', 'password', 'isAdmin','rented_now']
         return {key: value for key, value in vars(instance).items() if key not in excluded_attributes}
     else:
         raise NotImplementedError("Object type not supported for conversion to dictionary.")
