@@ -15,7 +15,7 @@ Functions:
 - backup: Create a backup of current rented books to a CSV file.
 
 """
-
+import configparser
 from flask import jsonify, make_response, request
 from app.models import Book, User, RentedHistory
 from functools import wraps
@@ -212,3 +212,18 @@ def backup():
     else:
         print(f"Backup already exists. No action taken.")
         return False
+
+
+def configure_app(app):
+    # Create a configparser object
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    # Configure SQLAlchemy
+    db_url = config.get('DatabaseURL', 'connection_db_string').format(**config['Database'])
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Configure secret key
+    app.config['SECRET_KEY'] = config.get('Database', 'secret_key')
+

@@ -1,23 +1,14 @@
-import os
 from flask import Flask
-from dotenv import load_dotenv
 from app.models import db
-from app.utilities import import_data
 from app.routes import main_app
+from app.utilities import import_data,configure_app
 
 
 def create_app():
     app = Flask(__name__)
 
-    load_dotenv()
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('CONNECTION_DB_STRING')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
+    configure_app(app)
     db.init_app(app)
-
-    # Register blueprints
     app.register_blueprint(main_app)
 
     # Create the database tables
