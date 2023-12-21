@@ -4,38 +4,37 @@ from app.models import Book,User,RentedHistory
 from functools import wraps
 import jwt,os,logging
 import pandas as pd
+from datetime import datetime
 
 
-def send_response(data_or_message, status_code=None):
+def send_response(response_content, status_code=None):
     """
     Generate a JSON response.
 
     Parameters:
-    - data_or_message: Either the data to be included in the response or an error message.
+    - response_content: Either the data to be included in the response or an error message.
     - status_code: The HTTP status code (default is None).
 
     Returns:
     - A Flask JSON response.
-
     """
 
-    response_data = {
-            "status": "success",
-            "status code": 200,
-    }
+    response_data = {"status": "success", "status code": 200}
 
-    if isinstance(data_or_message, str) and status_code != 200:
-        response_data["message"] = data_or_message
-        response_data["status"] = "error"
-        response_data["status code"] = status_code
-
-    elif (isinstance(data_or_message, list) and not data_or_message) or data_or_message == None:
+    if status_code and status_code != 200 and status_code != 201:
+        response_data.update({"status": "error", "message": response_content, "status code": status_code})
+    
+    elif response_content is None:
         response_data["data"] = "No data available!"
+    
     elif status_code == 201:
-        response_data["message"] = data_or_message
-        response_data["status code"] = status_code
-    else:                                 
-        response_data["data"] = data_or_message
+        response_data.update({"message": response_content,"status": "success", "status code": status_code})
+    
+    elif isinstance(response_content, (float, int)):
+        response_data["total revenue"] = response_content
+    
+    else:
+        response_data["data"] = response_content
 
     return make_response(response_data, status_code)
 
@@ -97,30 +96,35 @@ def import_data(db):
    db.session.commit()
 
 
-def export_to_csv(data, path):
+def export_to_csv(data, filename: str):
 
-   """
+    """
     Export data for rental and total revenue to CSV files.
 
     Parameters:
-        - data (DataFrame or any): The data to be exported.
-        - path (str): The path or filename for the CSV file.
+        - data (list or int): The data to be exported.
+        - filename (str): The filename for the CSV file.
+    """
 
-    Note:
-        - If `path.lower() == 'rentals'`, data is assumed to be a DataFrame.
-        - If `path.lower() != 'rentals'`, data is assumed to be a  value.
+    #Create new timestamp
+    date = datetime.now()      
+    date = date.strftime('%Y-%m-%d')
 
-   """
-       
-   if path.lower() == 'rentals':
-      df = pd.DataFrame(data) 
-      df.to_csv(f"./output/{path}.csv", index=False)
-   else:
-      df = pd.DataFrame({"total_revenue": [data]}) 
-      df.to_csv(f"./output/{path}.csv", index=False)
+    #Create path 
+    path = f"./output/{filename}-{date}.csv"
+
+    # Format data before passsing them on Dataframe constructor 
+    df = pd.DataFrame(data) if filename.lower() == 'rentals' else pd.DataFrame({"total_revenue": [data]})
+
+    # Check if the file exists - if not create backup
+    if not os.path.exists(path):
+        df.to_csv(path, index=False)
+        print(f"New CSV file '{filename}-{date}.csv' created with data.")
+    else:
+        print(f"Backup already exists for '{filename}-{date}.csv'. No action taken.")
 
 
-def user_data_is_valid(data):
+def user_data_is_valid(data:dict):
    # Validate incoming data
     if 'username' not in data or 'email' not in data or 'password' not in data:
        return False
@@ -163,12 +167,13 @@ def to_dict(instance):
         # Exclude specific attributes for user instance and SQLalchemy
         excluded_attributes = ['_sa_instance_state', 'password', 'isAdmin','rented_now']
         return {key: value for key, value in vars(instance).items() if key not in excluded_attributes}
-    else:
-        raise NotImplementedError("Object type not supported for conversion to dictionary.")
+    raise NotImplementedError("Object type not supported for conversion to dictionary.")
 
 
 def config_logger():
-    logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:%(message)s', filename='db.log', encoding='utf-8')
+    logging.basicConfig(level=logging.INFO,format='%(asctime)s:%(levelname)s:%(message)s',
+                        filename='db.log',
+                        encoding='utf-8')
     logger = logging.getLogger('logger')
     return logger
 
@@ -179,21 +184,28 @@ def backup():
                    RentedHistory.end_date.is_(None),
                     ).all()
     
-    print(rented_books)
-
     if not rented_books:
         return False
       
-
     data = []
     for rental in rented_books:
         data.append(to_dict(rental))
 
-    print(data)
+    #Create new timestamp
+    date = datetime.now()      
+    date = date.strftime('%Y-%m-%d')
 
-    df = pd.DataFrame.from_records(data, exclude=['end_date','total_cost','id'])
+    #Create path 
+    path = f"./output/Backup-{date}.csv"
 
-    df.to_csv('./output/backup.csv', index=False)
+    # Check if the file exists - if not create backup
+    if not os.path.exists(path):
+        df = pd.DataFrame.from_records(data, exclude=['end_date','total_cost','id'])
+        df.to_csv(path, index=False)
+        return True
+    else:
+        print(f"Backup already exists. No action taken.")
+        return False
 
-    print(f'Data has been written!')
-    return True
+
+

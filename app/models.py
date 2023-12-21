@@ -31,9 +31,9 @@ class RentedHistory(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
    
-    total_cost = db.Column(db.Integer)
+    total_cost = db.Column(db.Float)
     start_date = db.Column(db.String, nullable=False)
-    end_date = db.Column(db.String)
+    end_date = db.Column(db.String)     #change to date type
 
     isbn = db.Column(db.String, db.ForeignKey('books.isbn'), nullable=False)
     user = db.Column(db.Integer ,db.ForeignKey('users.id'), nullable=False)
@@ -99,4 +99,8 @@ class Book(db.Model):
     #         'image_url_m': self.image_url_m,
     #         'image_url_l': self.image_url_l,
     #     }
+
+
+
+
 

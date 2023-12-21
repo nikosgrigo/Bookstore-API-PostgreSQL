@@ -6,7 +6,7 @@ from sqlalchemy import or_
 
 class HistoryService:
 
-    def calculate_rental_fee(self,start,end):
+    def calculate_rental_fee(self, start, end):
 
         '''
         Calculate the rental fee based on the start and end dates of the rental period.
@@ -45,7 +45,6 @@ class HistoryService:
         book.isAvailable = True
 
         #3. Update end_date for current book
-
         date = datetime.now()      
         end_date = date.strftime('%Y-%m-%d')
 
@@ -53,7 +52,6 @@ class HistoryService:
 
         #4. Calculate rental fee based on rented days
         rental_fee = self.calculate_rental_fee(rentedBook.start_date,end_date)
-
 
         #5. Update total_cost on the instance
         rentedBook.total_cost = rental_fee

@@ -1,8 +1,9 @@
 
-from app.models import RentedHistory, User
-from flask import jsonify, make_response
+import os
+import jwt
 from datetime import datetime, timedelta
-import os,jwt
+from flask import jsonify, make_response
+from app.models import RentedHistory, User
 from app.utilities import to_dict,send_response
 
 
@@ -22,7 +23,6 @@ class UserService:
         rented_books = RentedHistory.query.filter_by(user = id, end_date = None)
 
         rented_books_info = []
-
         #3. For each rental get book info based on foreign key isbn
         for rented_instance in rented_books:    
             rented_books_info.append(to_dict(rented_instance.book))
@@ -75,15 +75,15 @@ class UserService:
 
 
     def generate_token(self, id):
-            token = jwt.encode({
-                "user_id": id,
-                "expiration": str(datetime.utcnow() + timedelta(seconds = 120))
-            },os.getenv('SECRET_KEY'))
+        token = jwt.encode({
+            "user_id": id,
+            "expiration": str(datetime.utcnow() + timedelta(seconds = 120))
+        },os.getenv('SECRET_KEY'))
 
-            response = jsonify({
-                                "message": "Login successful",
-                                "access_token": token,
-                                "token_type": "Bearer"
-                                })
+        response = jsonify({
+            "message": "Login successful",
+            "access_token": token,
+            "token_type": "Bearer"
+            })
             
-            return make_response(response, 200) 
+        return make_response(response, 200) 

@@ -103,7 +103,7 @@ def get_total_revenue(user):
    # Calculate total revenue for this specific range
    data = HistoryService.calculate_total_rental_fee(start_date, end_date)
 
-   export_to_csv(data,"totalRevenue")
+   export_to_csv(data,"TotalRevenue")
       
    return send_response(data) 
 
@@ -150,7 +150,7 @@ def get_backup(user):
    if not user['isAdmin']:
       return send_response("Oops you do not have the permission to access this resource.", 403)
 
-   return send_response('Back up successfully created', 200) if backup() else send_response('Back up could not be create', 404)
+   return send_response('Back up successfully created', 200) if backup() else send_response('Back up could not be created', 404)
    
 
 
