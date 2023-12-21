@@ -1,18 +1,39 @@
 from main import create_app
+import pytest
+
 
 app = create_app()
 client = app.test_client()
 
-#Test books route
-def test_get_all_books():
+# @pytest.fixture
+# def client():
+#     app = create_app()
+#     client = app.test_client()
+#     return client
+
+# @pytest.fixture
+# def get_response(client):
+#     def _get_response(route, expected_status_code=200, check_json=True):
+#         # Simulate a GET request to the specified route
+#         response = client.get(route)
+
+#         # Check that the response status code matches the expected status code
+#         assert response.status_code == expected_status_code
+
+#         # Check if the response contains JSON data if check_json is True
+#         if check_json:
+#             assert response.headers['Content-Type'] == 'application/json'
+#             assert response.get_json() is not None
+
+#         return response.get_json()
+
+#     return _get_response
+
+# Test books route
+def test_get_all_books(get_response):
 
     # Simulate a GET request to /books
-    response = client.get('/books')
-
-    # Check that the response status code is 200 (OK)
-    assert response.status_code == 200
-
-    data = response.get_json()
+    data = get_response('/books')
 
     # Check that the returned JSON
     assert isinstance(data, dict)
@@ -23,6 +44,27 @@ def test_get_all_books():
 
     # Check if the list is not empty
     assert len(data['data']) > 480
+
+# #Test books route
+# def test_get_all_books():
+
+#     # Simulate a GET request to /books
+#     response = client.get('/books')
+
+#     # Check that the response status code is 200 (OK)
+#     assert response.status_code == 200
+
+#     data = response.get_json()
+
+#     # Check that the returned JSON
+#     assert isinstance(data, dict)
+#     assert 'data' in data
+
+#     assert 'status code' in data
+#     assert 'status' in data
+
+#     # Check if the list is not empty
+#     assert len(data['data']) > 480
 
 #Test author route
 def test_get_books_by_author():

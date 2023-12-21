@@ -1,10 +1,10 @@
-
 import os
 from flask import Flask
 from dotenv import load_dotenv
 from app.models import db
 from app.utilities import import_data
 from app.routes import main_app
+
 
 def create_app():
     app = Flask(__name__)
@@ -30,7 +30,6 @@ def create_app():
 
     return app
 
+
 if __name__ == '__main__':
     create_app().run(debug=True)
-
-
