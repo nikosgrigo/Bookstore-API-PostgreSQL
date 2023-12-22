@@ -16,12 +16,16 @@ Functions:
 
 """
 import configparser
-from flask import jsonify, make_response, request
-from app.models import Book, User, RentedHistory
-from functools import wraps
-import jwt, os, logging
-import pandas as pd
 from datetime import datetime
+from functools import wraps
+
+import jwt
+import logging
+import os
+import pandas as pd
+from flask import jsonify, make_response, request
+
+from app.models import Book, User, RentedHistory
 
 
 def send_response(response_content, status_code=None):
