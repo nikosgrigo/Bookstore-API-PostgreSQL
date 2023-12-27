@@ -1,11 +1,1 @@
-2023-12-27 10:51:58,699 - INFO - Flask app closed [main.py:38]
-2023-12-27 11:37:05,877 - INFO - Flask app stared [main.py:24]
-2023-12-27 11:37:06,485 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on http://127.0.0.1:5000 [_internal.py:96]
-2023-12-27 11:37:06,485 - INFO - [33mPress CTRL+C to quit[0m [_internal.py:96]
-2023-12-27 11:37:06,486 - INFO -  * Restarting with stat [_internal.py:96]
-2023-12-27 11:37:07,361 - INFO - Flask app stared [main.py:24]
-2023-12-27 11:37:07,763 - WARNING -  * Debugger is active! [_internal.py:96]
-2023-12-27 11:37:07,765 - INFO -  * Debugger PIN: 730-582-976 [_internal.py:96]
-2023-12-27 11:37:13,190 - INFO - Flask app closed [main.py:38]
-2023-12-27 11:37:13,348 - INFO - Flask app closed [main.py:38]
+
