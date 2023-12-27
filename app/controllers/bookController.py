@@ -1,6 +1,8 @@
 from app.models import Book, RentedHistory
 from app.utilities import to_dict, send_response
 from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
+import logging
 
 
 class BookService:
@@ -13,10 +15,12 @@ class BookService:
         - list: A list of dictionaries containing information about available books.
 
         """
-
-        data = Book.query.filter_by(isAvailable=True).all()
-        data = [to_dict(book) for book in data]
-        return data
+        try:
+            data = Book.query.filter_by(isAvailable=True).all()
+            data = [to_dict(book) for book in data]
+            return data
+        except SQLAlchemyError as e:
+            logging.warning(f"Error querying the database: {e}")
 
     def get_book_by_identifier(self, identifier: str, value):
         """
@@ -53,25 +57,29 @@ class BookService:
         - None
         """
 
-        book = Book.query.get(book_id)
+        try:
 
-        # Check if book exists and if it is available for rent
-        if not book or not book.isAvailable:
-            return send_response("Book not available for rent", 400)
+            book = Book.query.get(book_id)
 
-        book.isAvailable = False
+            # Check if book exists and if it is available for rent
+            if not book or not book.isAvailable:
+                return send_response("Book not available for rent", 400)
 
-        # Create new timestamp
-        date = datetime.now()
+            book.isAvailable = False
 
-        # Format as "YYYY-MM-DD"
-        formatted_date = date.strftime('%Y-%m-%d')
+            # Create new timestamp
+            date = datetime.now()
 
-        # Create new instance on History table
-        new_rented_book = RentedHistory(0, formatted_date, None, book.isbn, user_id)
+            # Format as "YYYY-MM-DD"
+            formatted_date = date.strftime('%Y-%m-%d')
 
-        # Add the instance to the session
-        db.session.add(new_rented_book)
-        db.session.commit()
+            # Create new instance on History table
+            new_rented_book = RentedHistory(0, formatted_date, None, book.isbn, user_id)
 
-        return send_response("Book rented successfully", 200)
+            # Add the instance to the session
+            db.session.add(new_rented_book)
+            db.session.commit()
+
+            return send_response("Book rented successfully", 200)
+        except SQLAlchemyError as e:
+            logging.warning(f"Error querying the database: {e}")

@@ -1,29 +1,40 @@
 from flask import Flask
 from app.models import db
 from app.routes import main_app
-from app.utilities import import_data, configure_app
+from app.utilities import import_data
 from config.Config import AppConfig
+import logging
+
+# Configure the global logger in main.py
+logging.basicConfig(
+    filename='db.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s [%(filename)s:%(lineno)d]'
+)
+
+app = Flask(__name__)
+
+config = AppConfig()
+config.configure_app(app, db)
+
+app.register_blueprint(main_app)
 
 
-def create_app():
-    app = Flask(__name__)
+# logger = config_logger()
+logging.info('Flask app stared')
 
-    config = AppConfig('./config/config.ini')
-    config.configure_app(app, db)
-    # configure_app(app)
-    # db.init_app(app)
-    app.register_blueprint(main_app)
-
-    # Create the database tables
-    with app.app_context():
-        try:
-            db.create_all()
-            import_data(db)
-        except:
-            print('Loading Database and Tables...')
-
-    return app
-
+# Create the database tables
+with app.app_context():
+    try:
+        db.create_all()
+        import_data(db)
+    except Exception as e:
+         print('Loading Database and Tables...')
 
 if __name__ == '__main__':
-    create_app().run(debug=True)
+    try:
+        app.run(debug=True)
+    finally:
+        logging.info('Flask app closed')
+
+

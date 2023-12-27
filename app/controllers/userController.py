@@ -1,9 +1,9 @@
-import os
 from datetime import datetime, timedelta
 import jwt
 from flask import jsonify, make_response
 from app.models import RentedHistory, User
 from app.utilities import to_dict, send_response
+from config.Config import AppConfig
 
 
 class UserService:
@@ -112,9 +112,17 @@ class UserService:
             return send_response("Invalid credentials", 401)
 
             # 5. OK ready to login and create new JWT for user
-        return self.generate_token(user.id)
+        token = self.generate_token(user.id)
 
-    def generate_token(self, user_id: int):
+        if token: 
+            response = jsonify({
+            "message": "Login successful",
+            "access_token": token,
+            "token_type": "Bearer"
+        })
+            return make_response(response, 200)
+
+    def generate_token(self, user_id: int, mode = None):
 
         """
         Generate a JWT token for the specified user_id.
@@ -127,15 +135,15 @@ class UserService:
 
         """
 
+        if mode == 'test':
+            config = AppConfig(path = '../config/config.ini') 
+        else: 
+            config = AppConfig()
+
+        
         token = jwt.encode({
             "user_id": user_id,
             "expiration": str(datetime.utcnow() + timedelta(seconds=120))
-        }, os.getenv('SECRET_KEY'))
+        }, config.get_secret_key(), algorithm='HS256')
 
-        response = jsonify({
-            "message": "Login successful",
-            "access_token": token,
-            "token_type": "Bearer"
-        })
-
-        return make_response(response, 200)
+        return token

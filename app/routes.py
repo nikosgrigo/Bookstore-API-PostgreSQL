@@ -23,6 +23,13 @@ HistoryService = historyController.HistoryService()
 UserService = userController.UserService()
 
 
+# Custom middleware to log requests
+@main_app.before_request
+def log_request_info():
+    # Log information about the incoming request
+    logging.info(f'New request : {request.url} from {request.remote_addr}.')
+
+
 # Retrieve a list of all available books
 @main_app.route('/books', methods=['GET'])
 def get_all_books():

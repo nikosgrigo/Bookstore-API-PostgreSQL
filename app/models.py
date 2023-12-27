@@ -44,7 +44,7 @@ class User(db.Model):
 class RentedHistory(db.Model):
     __tablename__ = 'history'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True)
 
     total_cost = db.Column(db.Float)
     start_date = db.Column(db.String, nullable=False)

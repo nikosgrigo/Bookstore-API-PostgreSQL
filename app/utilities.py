@@ -15,7 +15,6 @@ Functions:
 - backup: Create a backup of current rented books to a CSV file.
 
 """
-import configparser
 from datetime import datetime
 from functools import wraps
 
@@ -25,6 +24,7 @@ import os
 import pandas as pd
 from flask import jsonify, make_response, request
 
+from config.Config import AppConfig
 from app.models import Book, User, RentedHistory
 
 
@@ -88,10 +88,46 @@ def import_data(db):
    - db: The SQLAlchemy database instance.
 
    """
+    
+    # Create sample user data
+    users_data = [
+        {"username": "user1", "email": "user1@gmail.com", "password": "user1"},
+        {"username": "user2", "email": "user2@gmail.com", "password": "user2"},
+        {"username": "admin", "email": "admin@gmail.com", "password": "admin"},
+        {"username": "demo", "email": "demo@gmail.com", "password": "demo"},
+    ]
+
+    # Add rented history records to the database
+    rented_history_data = [
+        {"total_cost": 0, "start_date": "2023-12-10","end_date": None, "isbn": "042511774X", "user_id": 4},
+        {"total_cost": 0,"start_date": "2023-12-12","end_date": None, "isbn": "1853262404", "user_id": 1},
+        {"total_cost": 3, "start_date": "2023-12-18", "end_date": "2023-12-21", "isbn": "043922165X", "user_id": 1},
+        {"total_cost": 4.5, "start_date": "2023-12-21", "end_date": "2023-12-27", "isbn": "1841721522", "user_id": 2},
+    ]
+
+    # Add users to the database
+    for rental in rented_history_data:
+        new_rental = RentedHistory(rental.get('total_cost'),
+                          rental.get('start_date'),
+                          rental.get('end_date'),
+                          rental.get('isbn'),
+                          rental.get('user_id'))
+        db.session.add(new_rental)
+
+    # Add users to the database
+    for user_data in users_data:
+        new_user = User(user_data.get('username'),
+                        user_data.get('email'),
+                        user_data.get('password'))
+        db.session.add(new_user)
+
+    db.session.commit()
+
+
     data = pd.read_csv('./data/Books.csv')
 
     # Iterate over rows and add data to the database
-    for index, row in data.iterrows():
+    for _, row in data.iterrows():
         book = Book(
             isbn=row['ISBN'],
             title=row['Book-Title'],
@@ -107,8 +143,11 @@ def import_data(db):
         )
         db.session.add(book)
 
+
     # Commit changes to the database
     db.session.commit()
+
+    logging.info('Database and Tables data imported successfully')
 
 
 def export_to_csv(data, filename: str):
@@ -119,23 +158,25 @@ def export_to_csv(data, filename: str):
         - data (list or int): The data to be exported.
         - filename (str): The filename for the CSV file.
     """
+    try:
+        # Create new timestamp
+        date = datetime.now()
+        date = date.strftime('%Y-%m-%d')
 
-    # Create new timestamp
-    date = datetime.now()
-    date = date.strftime('%Y-%m-%d')
+        # Create path
+        path = f"output/{filename}-{date}.csv"
 
-    # Create path
-    path = f"../output/{filename}-{date}.csv"
+        # Format data before passing them on Dataframe constructor
+        df = pd.DataFrame(data) if filename.lower() == 'rentals' else pd.DataFrame({"total_revenue": [data]})
 
-    # Format data before passing them on Dataframe constructor
-    df = pd.DataFrame(data) if filename.lower() == 'rentals' else pd.DataFrame({"total_revenue": [data]})
-
-    # Check if the file exists - if not create backup
-    if not os.path.exists(path):
-        df.to_csv(path, index=False)
-        print(f"New CSV file '{filename}-{date}.csv' created with data.")
-    else:
-        print(f"Backup already exists for '{filename}-{date}.csv'. No action taken.")
+        # Check if the file exists - if not create backup
+        if not os.path.exists(path):
+            df.to_csv(path, index=False)
+            logging.info(f"New CSV file '{filename}-{date}.csv' created with data.")
+        else:
+            logging.warning(f"Backup already exists for '{filename}-{date}.csv'. No action taken.")
+    except Exception as e:
+        logging.error(e)
 
 
 def user_data_is_valid(data: dict):
@@ -156,7 +197,8 @@ def token_required(f):
             return jsonify({'message': 'Token is missing !!'}), 401
 
         try:
-            data = jwt.decode(token, os.getenv('SECRET_KEY'), algorithms=['HS256'])
+            config = AppConfig()
+            data = jwt.decode(token, config.get_secret_key(), algorithms=['HS256'])
             user = User.query.filter_by(id=data['user_id']).first()
 
             # Create a dictionary with only the desired attributes
@@ -166,10 +208,9 @@ def token_required(f):
             }
 
         except jwt.ExpiredSignatureError:
-            return jsonify({'message': 'Token has expired'}), 401
+            return jsonify({'message': 'Token has expired'}),
         except jwt.InvalidTokenError:
             return jsonify({'message': 'Invalid token'}), 401
-        # returns the current logged in users context to the routes
         return f(user, *args, **kwargs)
 
     return decorated
@@ -180,15 +221,7 @@ def to_dict(instance):
         # Exclude specific attributes for user instance and SQLalchemy
         excluded_attributes = ['_sa_instance_state', 'password', 'isAdmin', 'rented_now']
         return {key: value for key, value in vars(instance).items() if key not in excluded_attributes}
-    raise NotImplementedError("Object type not supported for conversion to dictionary.")
-
-
-def config_logger():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s',
-                        filename='db.log',
-                        encoding='utf-8')
-    logger = logging.getLogger('logger')
-    return logger
+    logging.warning("Object type not supported for conversion to dictionary.")
 
 
 def backup():
@@ -206,28 +239,14 @@ def backup():
     date = date.strftime('%Y-%m-%d')
 
     # Create path
-    path = f"../output/Backup-{date}.csv"
+    path = f"output/Backup-{date}.csv"
 
     # Check if the file exists - if not create backup
     if not os.path.exists(path):
         df = pd.DataFrame.from_records(data, exclude=['end_date', 'total_cost', 'id'])
         df.to_csv(path, index=False)
+        logging.info('Backup created successfully')
         return True
     else:
-        print(f"Backup already exists. No action taken.")
+        logging.warning("Backup already exists. No action taken.")
         return False
-
-
-def configure_app(app):
-    # Create a configparser object
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-
-    # Configure SQLAlchemy
-    db_url = config.get('DatabaseURL', 'connection_db_string').format(**config['Database'])
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # Configure secret key
-    app.config['SECRET_KEY'] = config.get('Database', 'secret_key')
-

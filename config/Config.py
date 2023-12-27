@@ -4,9 +4,9 @@ import os
 
 class AppConfig:
 
-    def __init__(self, path):
-        self.config = configparser.ConfigParser()
+    def __init__(self, path = './config/config.ini'):   #change it to '../config/config.ini' if you wanna run tests module - BUG
         self.config_file = path
+        self.config = configparser.ConfigParser()
 
         # Read configuration from the file
         self.read_config()
